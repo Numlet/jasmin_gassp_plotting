@@ -26,6 +26,11 @@ import matplotlib as mpl
 mpl.use('Agg')
 iris.FUTURE.netcdf_promote=True
 
+def set_all_index(array):
+    indexes=[np.s_[:] for _ in range(array.ndim)]
+    return indexes
+
+
 data_path='/group_workspaces/jasmin2/gassp/myoshioka/um/GASSP_PPEs/2008/Variables/'
 folder_plots='/group_workspaces/jasmin2/gassp/jvergaratemprado/masaru_nc_plots/'
 variables=glob(data_path+'*')
@@ -33,8 +38,14 @@ variables=[variable[len(data_path):]+'/' for variable in variables]
 print variables
 
 leeds_folder_plots='/nfs/see-fs-01_users/eejvt/svn_test/plots/'
+file_path='/nfs/a201/eejvt/AODs_TOTALebaa-tebiz_pm2008oct.nc'
+file_path='/nfs/a201/eejvt/LW_UP_AS_TOA_tebaa-tebgz_pm2008jun.nc'
+file_path='/nfs/a201/eejvt/N50_tebaa-tebiz_pm2008jan_t.nc'
+file_path='/nfs/a201/eejvt/CCN0p2_tebaa-tebiz_pm2008jan_t.nc'
 
 cmap=plt.cm.OrRd
+cube=iris.load(file_path)[0]
+print cube
 for variable in variables:
     print variable
     data_variable_path=data_path+variable
@@ -53,14 +64,38 @@ for variable in variables:
             try:
                 cube=iris.load(file_name)[0]
             except:
-                cube=iris.load(file_name)[0]
+                #cube=iris.load(file_name)[0]
                 print '----------------------------',file_name, 'couldn\'t be opened \n \n'
+                print file_name
                 continue
+            
+            if any(np.array(cube.data.shape) == 85):
+                indx=set_all_index(cube)
+                lev_pos=cube.data.shape.index(85)
+                #surface level
+                indx[lev_pos]=0
+                cube=cube[indx]
+            
             lon=cube.coord('longitude').points[:]
             lat=cube.coord('latitude').points[:]
-
-            cube_data=cube.data[:,0,:,:,:]
-
+            coor_collapse=[coor.var_name for coor in cube.coords() if coor.var_name!='latitude' and coor.var_name!='longitude']
+            for coor in coor_collapse:
+                try:
+                    cube=cube.collapsed(coor,iris.analysis.MEAN)
+                    print file_name
+                    print 'collapsed on:',coor
+                except:
+                    #print cube
+                    print coor
+            #iris.Constraint(model_level_number=10)
+            
+            cube_data=cube.data
+            if cube_data.ndim==3 and cube.shape[1]==145 and cube.shape[2]==192:
+                print 'nruns=', cube_data.shape[0]
+            else:
+                print 'cube not with the right dimensions', cube.shape
+                continue
+                            
             mean_values=cube_data.mean(axis=0)
             std_values=cube_data.std(axis=0)
 
