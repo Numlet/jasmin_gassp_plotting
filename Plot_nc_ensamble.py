@@ -23,6 +23,7 @@ from scipy.optimize import curve_fit
 import scipy
 import iris
 import matplotlib as mpl
+import multiprocessing
 mpl.use('Agg')
 iris.FUTURE.netcdf_promote=True
 
@@ -43,23 +44,25 @@ file_path='/nfs/a201/eejvt/CCN0p2_tebaa-tebiz_pm2008jan_t.nc'
 file_path='/nfs/a201/eejvt/N50_tebaa-tebiz_pm2008jan_t.nc'
 file_path='/nfs/a201/eejvt/RF_SW_CS_TOA_tebaa-tebiz_pm2008jul.nc'
 file_path='/nfs/a201/eejvt/AODs_TOTALebaa-tebiz_pm2008oct.nc'
+
 cmap=plt.cm.OrRd
 cube=iris.load(file_path)[0]
 #%%
 print cube
-for variable in variables:
-    print variable
+
+def plot_variable(variable):    
+    #print variable
     data_variable_path=data_path+variable
-    print data_variable_path
+    #print data_variable_path
     folders=['Hires_N96/','Lores_N48/']
     for folder in folders:
         a=glob(data_variable_path+folder+'*')
-        str_a=data_variable_path+folder+'*'
-        print str_a
+        #str_a=data_variable_path+folder+'*'
+        #print str_a
         for nc_file in a :
-            print nc_file
+            #print nc_file
             nc_file=nc_file[len(data_variable_path+folder):]
-            print nc_file
+            #print nc_file
             file_name=data_variable_path+folder+nc_file
         # mb=netcdf.netcdf_file(file_name,'r')
             try:
@@ -67,7 +70,7 @@ for variable in variables:
             except:
                 #cube=iris.load(file_name)[0]
                 print '----------------------------',file_name, 'couldn\'t be opened \n \n'
-                print file_name
+                #print file_name
                 continue
             
             plot_name='2D'
@@ -103,25 +106,28 @@ for variable in variables:
             for coor in coor_collapse:
                 try:
                     cube=cube.collapsed(coor,iris.analysis.MEAN)
+                    print variable                    
                     print file_name
                     print 'collapsed on:',coor
                 except:
                     #print cube
-                    print '--------not collapsed-----'
-                    print coor
+                    #print '--------not collapsed-----'
+                    #print coor
             #iris.Constraint(model_level_number=10)
             
             cube_data=cube.data
             if cube_data.ndim==3 and cube.shape[1]==145 and cube.shape[2]==192:
-                print 'nruns=', cube_data.shape[0]
+                #print 'nruns=', cube_data.shape[0]
             else:
+                print variable                    
+                print file_name
                 print 'cube not with the right dimensions', cube.shape
                 continue
                             
             mean_values=cube_data.mean(axis=0)
             std_values=cube_data.std(axis=0)
             file_name_plot=folder_plots+nc_file+'_plot_'+plot_name+'_mean'
-            print file_name_plot
+            #print file_name_plot
             jl.plot(mean_values[:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='png',cmap=cmap,show=0)
             plt.close()
             jl.plot(mean_values[:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='ps',cmap=cmap,show=0)
@@ -140,6 +146,14 @@ for variable in variables:
             plt.close()
             jl.plot(std_values[:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,cmap=cmap)
             plt.close()
+jobs=[]
+for variable in variables:
+    p = multiprocessing.Process(target=plot_variable, args=(variable,))
+    jobs.append(p)
+    p.start()
+    #plot_variable(variable)
+
+
 leeds_profile='eejvt@see-gw-01.leeds.ac.uk'
 command='scp '+folder_plots+'* '+leeds_profile+':'+leeds_folder_plots
 os.system(command)
