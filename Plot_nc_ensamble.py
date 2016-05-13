@@ -38,13 +38,14 @@ variables=[variable[len(data_path):]+'/' for variable in variables]
 print variables
 
 leeds_folder_plots='/nfs/see-fs-01_users/eejvt/svn_test/plots/'
-file_path='/nfs/a201/eejvt/AODs_TOTALebaa-tebiz_pm2008oct.nc'
 file_path='/nfs/a201/eejvt/LW_UP_AS_TOA_tebaa-tebgz_pm2008jun.nc'
-file_path='/nfs/a201/eejvt/N50_tebaa-tebiz_pm2008jan_t.nc'
 file_path='/nfs/a201/eejvt/CCN0p2_tebaa-tebiz_pm2008jan_t.nc'
-
+file_path='/nfs/a201/eejvt/N50_tebaa-tebiz_pm2008jan_t.nc'
+file_path='/nfs/a201/eejvt/RF_SW_CS_TOA_tebaa-tebiz_pm2008jul.nc'
+file_path='/nfs/a201/eejvt/AODs_TOTALebaa-tebiz_pm2008oct.nc'
 cmap=plt.cm.OrRd
 cube=iris.load(file_path)[0]
+#%%
 print cube
 for variable in variables:
     print variable
@@ -69,12 +70,32 @@ for variable in variables:
                 print file_name
                 continue
             
+            plot_name='2D'
             if any(np.array(cube.data.shape) == 85):
                 indx=set_all_index(cube)
                 lev_pos=cube.data.shape.index(85)
                 #surface level
                 indx[lev_pos]=0
+                indx=tuple(indx)
                 cube=cube[indx]
+                plot_name='surface'
+            if any(np.array(cube.data.shape) == 6):
+                indx=set_all_index(cube)
+                
+                lev_pos=cube.data.shape.index(3)
+                #surface level
+                indx[lev_pos]=2
+                indx=tuple(indx)
+                cube=cube[indx]
+                plot_name='550nm'
+            while any(np.array(cube.data.shape) == 1):
+                indx=set_all_index(cube)
+                lev_pos=cube.data.shape.index(1)
+                #surface level
+                indx[lev_pos]=0
+                indx=tuple(indx)
+                cube=cube[indx]
+                
             
             lon=cube.coord('longitude').points[:]
             lat=cube.coord('latitude').points[:]
@@ -86,6 +107,7 @@ for variable in variables:
                     print 'collapsed on:',coor
                 except:
                     #print cube
+                    print '--------not collapsed-----'
                     print coor
             #iris.Constraint(model_level_number=10)
             
@@ -98,26 +120,25 @@ for variable in variables:
                             
             mean_values=cube_data.mean(axis=0)
             std_values=cube_data.std(axis=0)
-
-            file_name_plot=folder_plots+nc_file+'_plot_surface_mean'
+            file_name_plot=folder_plots+nc_file+'_plot_'+plot_name+'_mean'
             print file_name_plot
-            jl.plot(mean_values[0,:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='png',cmap=cmap,show=0)
+            jl.plot(mean_values[:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='png',cmap=cmap,show=0)
             plt.close()
-            jl.plot(mean_values[0,:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='ps',cmap=cmap,show=0)
+            jl.plot(mean_values[:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='ps',cmap=cmap,show=0)
             plt.close()
-            jl.plot(mean_values[0,:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='pdf',cmap=cmap,show=0)
+            jl.plot(mean_values[:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='pdf',cmap=cmap,show=0)
             plt.close()
-            jl.plot(mean_values[0,:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,cmap=cmap)
+            jl.plot(mean_values[:,:],title='Mean '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,cmap=cmap)
             plt.close()
 
-            file_name_plot=folder_plots+nc_file+'_plot_surface_std'
-            jl.plot(std_values[0,:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='png',cmap=cmap,show=0)
+            file_name_plot=folder_plots+nc_file+'_plot_'+plot_name+'_std'
+            jl.plot(std_values[:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='png',cmap=cmap,show=0)
             plt.close()
-            jl.plot(std_values[0,:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='ps',cmap=cmap,show=0)
+            jl.plot(std_values[:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='ps',cmap=cmap,show=0)
             plt.close()
-            jl.plot(std_values[0,:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='pdf',cmap=cmap,show=0)
+            jl.plot(std_values[:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,saving_format='pdf',cmap=cmap,show=0)
             plt.close()
-            jl.plot(std_values[0,:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,cmap=cmap)
+            jl.plot(std_values[:,:],title='Std '+cube.long_name,lat=lat,lon=lon,cblabel=cube.units.origin,file_name=file_name_plot,cmap=cmap)
             plt.close()
 leeds_profile='eejvt@see-gw-01.leeds.ac.uk'
 command='scp '+folder_plots+'* '+leeds_profile+':'+leeds_folder_plots
